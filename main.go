@@ -2,33 +2,34 @@ package main
 
 import (
 	"flag"
-	"os"
+	"math/rand"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
 
 func main() {
-	flagMode := flag.String("mode", "raw", "raw or txn")
-	flagAddr := flag.String("addr", "pd0:2379", "pd address")
+	flagAddr := flag.String("addr", "127.0.0.1:2379", "pd address")
+	flagOutputFile := flag.String("outfile", "backup.tar.gz", "file to backup")
+	flagMode := flag.String("mode", "backup", "backup or restore")
 	flag.Parse()
 
-	if *flagAddr == "" {
-		flag.PrintDefaults()
-		os.Exit(-1)
-	}
+	dbClient := newDBTxn()
 
-	var dbClient db
-	switch *flagMode {
-	case "raw":
-		dbClient = newDBRaw()
-	case "txn":
-		dbClient = newDBTxn()
-	default:
-		flag.PrintDefaults()
-		os.Exit(-1)
-	}
+	rand.Seed(time.Now().Unix())
 
 	if err := dbClient.connect(*flagAddr); err != nil {
 		logrus.Fatal(err)
+	}
+
+	switch *flagMode {
+	case "backup":
+		if err := dbClient.backup(*flagOutputFile); err != nil {
+			logrus.Fatal(err)
+		}
+	case "restore":
+		logrus.Fatal("restore unsupported")
+	default:
+		logrus.Fatalf("unknown mode %s\n", *flagMode)
 	}
 }

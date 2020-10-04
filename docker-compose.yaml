@@ -37,4 +37,4 @@ services:
       - .:/go/src/github.com/datatech-labs/tikv-backup-restore
       - $GOPATH/pkg/mod:/go/pkg/mod
     working_dir: /go/src/github.com/datatech-labs/tikv-backup-restore
-    command: bash -c "go build && ./tikv-backup-restore"
+    command: bash -c "sleep 5 && go test -v"
