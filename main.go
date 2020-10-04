@@ -1,32 +1,34 @@
 package main
 
 import (
-	"context"
 	"flag"
+	"os"
 
 	"github.com/sirupsen/logrus"
-	"github.com/tikv/client-go/config"
-	"github.com/tikv/client-go/txnkv"
 )
 
 func main() {
+	flagMode := flag.String("mode", "raw", "raw or txn")
 	flagAddr := flag.String("addr", "pd0:2379", "pd address")
 	flag.Parse()
 
 	if *flagAddr == "" {
 		flag.PrintDefaults()
+		os.Exit(-1)
 	}
 
-	if err := backup(*flagAddr); err != nil {
-		logrus.Error(err)
+	var dbClient db
+	switch *flagMode {
+	case "raw":
+		dbClient = newDBRaw()
+	case "txn":
+		dbClient = newDBTxn()
+	default:
+		flag.PrintDefaults()
+		os.Exit(-1)
 	}
-}
 
-func backup(addr string) error {
-	_, err := connect(addr)
-	return err
-}
-
-func connect(addr string) (*txnkv.Client, error) {
-	return txnkv.NewClient(context.TODO(), []string{addr}, config.Default())
+	if err := dbClient.connect(*flagAddr); err != nil {
+		logrus.Fatal(err)
+	}
 }
