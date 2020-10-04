@@ -1,0 +1,40 @@
+version: '2.1'
+
+services:
+  pd0:
+    image: pingcap/pd:latest
+    ports:
+      - "2379"
+    logging:
+      driver: none
+    command:
+      - --name=pd0
+      - --client-urls=http://0.0.0.0:2379
+      - --peer-urls=http://0.0.0.0:2380
+      - --advertise-client-urls=http://pd0:2379
+      - --advertise-peer-urls=http://pd0:2380
+      - --initial-cluster=pd0=http://pd0:2380
+    restart: unless-stopped
+  
+  tikv0:
+    image: pingcap/tikv:latest
+    logging:
+      driver: none
+    command:
+      - --addr=0.0.0.0:20160
+      - --advertise-addr=tikv0:20160
+      - --pd=pd0:2379
+    depends_on:
+      - "pd0"
+    restart: unless-stopped
+
+  app:
+    image: golang:1.15
+    restart: unless-stopped
+    depends_on:
+      - "tikv0"
+    volumes:
+      - .:/app
+      - $GOPATH/pkg/mod:/go/pkg/mod
+    working_dir: /app
+    command: go run main.go
